@@ -5,6 +5,7 @@ import { BullModule } from '@nestjs/bull';
 import { SubmitterModule } from './submitter/submitter.module';
 import { ComputeBridgeModule } from './compute-bridge/compute-bridge.module';
 import { AgentModule } from './agent/agent.module';
+import { AuditLogModule } from './audit/audit-log.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { AgentModule } from './agent/agent.module';
     SubmitterModule,
     ComputeBridgeModule,
     AgentModule,
+    AuditLogModule,
   ],
 })
 export class AppModule {}

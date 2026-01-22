@@ -6,6 +6,7 @@ import { SubmitterService } from './submitter.service';
 import { SubmissionProcessor } from './submission.processor';
 import { StellarService } from './stellar.service';
 import { Submission } from './entities/submission.entity';
+import { AuditLogModule } from '../audit/audit-log.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { Submission } from './entities/submission.entity';
     BullModule.registerQueue({
       name: 'submissions',
     }),
+    AuditLogModule,
   ],
   controllers: [SubmitterController],
   providers: [SubmitterService, SubmissionProcessor, StellarService],
