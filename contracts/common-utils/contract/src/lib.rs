@@ -1,4 +1,4 @@
-#![no_std]
+pub mod oracle_bridge;
 
 use soroban_sdk::{
     contract, contractimpl, panic_with_error, symbol, Address, Env, Map, Storage, Vec, IntoVal,

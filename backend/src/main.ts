@@ -7,3 +7,9 @@ async function bootstrap() {
   console.log(`🚀 ChenAIKit Backend running on port ${process.env.PORT || 3000}`);
 }
 bootstrap();
+
+  await app.listen(3000);
+  console.log('Submitter service running on http://localhost:3000');
+}
+
+bootstrap();
