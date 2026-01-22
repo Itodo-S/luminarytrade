@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bull';
 import { SubmitterModule } from './submitter/submitter.module';
 import { ComputeBridgeModule } from './compute-bridge/compute-bridge.module';
+import { AgentModule } from './agent/agent.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { ComputeBridgeModule } from './compute-bridge/compute-bridge.module';
     }),
     SubmitterModule,
     ComputeBridgeModule,
+    AgentModule,
   ],
 })
 export class AppModule {}
