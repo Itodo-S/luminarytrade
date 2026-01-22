@@ -9,6 +9,8 @@ import { NormalizedScoringResult, ScoringRequestDto, ScoringResponseDto } from '
 import { LlamaProvider } from '../provider/llama.provider';
 import { OpenAIProvider } from '../provider/open-ai.provider';
 import { GrokProvider } from '../provider/grok.provider';
+import { AuditLogService } from '../../audit/audit-log.service';
+import { AuditEventType } from '../../audit/entities/audit-log.entity';
 
 @Injectable()
 export class AIOrchestrationService {
@@ -20,6 +22,7 @@ export class AIOrchestrationService {
     @InjectRepository(AIResultEntity)
     private aiResultRepository: Repository<AIResultEntity>,
     private configService: ConfigService,
+    private auditLogService: AuditLogService,
   ) {
     this.secretKey = this.configService.get<string>('AI_SIGNATURE_SECRET') || 'default-secret-key';
     this.initializeProviders();
@@ -64,8 +67,22 @@ export class AIOrchestrationService {
 
     await this.aiResultRepository.save(aiResult);
 
+    // Log audit event for scoring started
+    await this.auditLogService.logEvent(
+      request.userId,
+      AuditEventType.AI_SCORING_STARTED,
+      {
+        resultId: aiResult.id,
+        provider: aiResult.provider,
+        userData: request.userData,
+      },
+      `AI scoring initiated for user ${request.userId}`,
+      aiResult.id,
+      'AIResult',
+    );
+
     // Execute scoring asynchronously
-    this.executeScoringAsync(aiResult.id, request.userData).catch(error => {
+    this.executeScoringAsync(aiResult.id, request.userId, request.userData).catch(error => {
       this.logger.error(`Async scoring failed for ${aiResult.id}:`, error);
     });
 
@@ -94,7 +111,7 @@ export class AIOrchestrationService {
     });
   }
 
-  private async executeScoringAsync(resultId: string, userData: Record<string, any>): Promise<void> {
+  private async executeScoringAsync(resultId: string, wallet: string, userData: Record<string, any>): Promise<void> {
     const aiResult = await this.aiResultRepository.findOne({ where: { id: resultId } });
     if (!aiResult) return;
 
@@ -118,11 +135,41 @@ export class AIOrchestrationService {
 
       await this.aiResultRepository.save(aiResult);
 
+      // Log audit event for scoring completed
+      await this.auditLogService.logEvent(
+        wallet,
+        AuditEventType.AI_SCORING_COMPLETED,
+        {
+          resultId: aiResult.id,
+          provider: scoringResult.provider,
+          creditScore: aiResult.creditScore,
+          riskScore: aiResult.riskScore,
+          riskLevel: aiResult.riskLevel,
+        },
+        `AI scoring completed for user ${wallet}`,
+        aiResult.id,
+        'AIResult',
+      );
+
       this.logger.log(`Scoring completed for ${resultId} using ${scoringResult.provider}`);
     } catch (error) {
       aiResult.status = AIResultStatus.FAILED;
       aiResult.errorMessage = error.message;
       await this.aiResultRepository.save(aiResult);
+
+      // Log audit event for scoring failed
+      await this.auditLogService.logEvent(
+        wallet,
+        AuditEventType.AI_SCORING_FAILED,
+        {
+          resultId: aiResult.id,
+          errorMessage: error.message,
+          provider: aiResult.provider,
+        },
+        `AI scoring failed for user ${wallet}: ${error.message}`,
+        aiResult.id,
+        'AIResult',
+      );
 
       this.logger.error(`Scoring failed for ${resultId}:`, error);
     }
